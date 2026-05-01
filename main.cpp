@@ -1,11 +1,9 @@
 #include <iostream>
 
-int add(int x, int y);
+void PrintResult();
 
-int main(){
-    std::cout << add(5,2) << "\n";
-    std::cout << add(6,7) << "\n";
+int main()
+{
+    PrintResult();
     return 0;
-
-
 }
