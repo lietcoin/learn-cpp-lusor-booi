@@ -12,6 +12,6 @@ float getData(){
     return current * resistance;
 }
 
-void PrintResult(){
-    std::cout << getData() << "v (volts).\n";
+void PrintResult(int voltage){
+    std::cout << voltage << "v (volts).\n";
 }
