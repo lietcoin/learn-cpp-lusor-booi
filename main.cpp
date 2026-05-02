@@ -1,4 +1,4 @@
-#include "voltage.h"
+#include "voltage.hpp"
 #include <iostream>
 
 
