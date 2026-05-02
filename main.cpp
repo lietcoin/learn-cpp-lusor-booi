@@ -1,12 +1,15 @@
-#include <iostream>
 #include "voltage.h"
+#include <iostream>
 
 
 
 int main()
 {
-    std::cerr << "[ This program calculates voltage using Ohm's Law. [ V = I * R ] \n";
-    double voltage{ getData() };
-    PrintResult(voltage);
+    double voltage{getVoltage()};
+    double resistance{getResistance()};
+    double ResultCurrent{GetCurrent(voltage, resistance)};
+
+
+    PrintCurrent(ResultCurrent);
     return 0;
 }

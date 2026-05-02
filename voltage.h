@@ -1,17 +1,9 @@
-#include <iostream>
+#ifndef VOLTAGE_H
+#define VOLTAGE_H
 
-float getData(){
-    float current{};
-    float resistance{};
-    std::cout << "Please, insert your current: ";
-    std::cin >> current;
+double getVoltage();
+double getResistance();
+double GetCurrent(double voltage, double resistance);
+void PrintCurrent(double current);
 
-    std::cout << "Please, insert your resistance: ";
-    std::cin >> resistance;
-
-    return current * resistance;
-}
-
-void PrintResult(int voltage){
-    std::cout << voltage << "v (volts).\n";
-}
+#endif
