@@ -1,13 +1,42 @@
 #include <iostream>
 
+double getNumber(){
+	double number{};
+	std::cout << "Enter a double value: ";
+	std::cin >> number;
+	return number;
+}
+
+char getSymbol(){
+	char symbol{};
+	std::cout << "Enter +, -, *, or /: ";
+	std::cin >> symbol;
+	return symbol;
+}
+
+void getAnswer(double firstNumber, double secondNumber, char symbol){
+	double result;
+
+	if (symbol == '+')
+		result = firstNumber + secondNumber;
+	else if (symbol == '-')
+		result = firstNumber - secondNumber;
+	else if (symbol == '*')
+		result = firstNumber * secondNumber;
+	else if (symbol == '/')
+		result = firstNumber / secondNumber;
+	
+
+	std::cout << "You got answer: " << result << '\n';
+}
+
 int main()
 {
-    // assume 4 byte integers
-    int x { 2'147'483'647 }; // the maximum value of a 4-byte signed integer
-    std::cout << x << '\n';
+	double firstNumber{getNumber()};
+	double secondNumber{getNumber()};
+	char symbol{getSymbol()};
 
-    x = x + 1; // integer overflow, undefined behavior
-    std::cout << x << '\n';
+	getAnswer(firstNumber, secondNumber, symbol);
 
     return 0;
 }
