@@ -1,42 +1,35 @@
 #include <iostream>
 
 double getNumber(){
-	double number{};
-	std::cout << "Enter a double value: ";
-	std::cin >> number;
-	return number;
+	double num{};
+	std::cout << "Please insert a number of your choice: ";
+	std::cin >> num;
+	return num;
 }
 
 char getSymbol(){
-	char symbol{};
+	char sym{};
 	std::cout << "Enter +, -, *, or /: ";
-	std::cin >> symbol;
-	return symbol;
+	std::cin >> sym;
+	return sym;
 }
 
-void getAnswer(double firstNumber, double secondNumber, char symbol){
-	double result;
-
+void Calculations(double first, double second, char symbol){
 	if (symbol == '+')
-		result = firstNumber + secondNumber;
+		std::cout << first << symbol << second << " is " << first + second;
 	else if (symbol == '-')
-		result = firstNumber - secondNumber;
+		std::cout << first << symbol << second << " is " << first - second;
 	else if (symbol == '*')
-		result = firstNumber * secondNumber;
+		std::cout << first << symbol << second << " is " << first * second;
 	else if (symbol == '/')
-		result = firstNumber / secondNumber;
-	
+		std::cout << first << symbol << second << " is " << first / second;
+	else
+		std::cout << "error \n";
+}	
 
-	std::cout << "You got answer: " << result << '\n';
-}
-
-int main()
-{
-	double firstNumber{getNumber()};
-	double secondNumber{getNumber()};
-	char symbol{getSymbol()};
-
-	getAnswer(firstNumber, secondNumber, symbol);
-
-    return 0;
+int main(){
+	double first{ getNumber() };
+	double second{ getNumber() };
+	char symbol{ getSymbol() };
+	Calculations(first, second, symbol);
 }
