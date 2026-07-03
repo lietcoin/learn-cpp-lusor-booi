@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create the release under (created if missing)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub release with the add-on attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # Tag may not exist yet — create it at the dispatched commit.
+            gh release create "$TAG" \
+              roblox_world_exporter.py \
+              --title "Roblox World Exporter $TAG" \
+              --notes-file .github/release-notes.md \
+              --target "$GITHUB_SHA"
+          else
+            gh release create "$TAG" \
+              roblox_world_exporter.py \
+              --title "Roblox World Exporter $TAG" \
+              --notes-file .github/release-notes.md \
+              --verify-tag
+          fi
