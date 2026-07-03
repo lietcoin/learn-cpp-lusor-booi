@@ -1,30 +1,14 @@
 # Roblox World Exporter (Blender add-on)
 
 Export large Blender worlds to Roblox. Roblox MeshParts max out at
-**2048 × 2048 × 2048 studs** — this add-on measures your world, slices it into
-an **even grid** of tiles (equal-size tiles, never leftover slivers), and
-exports everything so the map reassembles in Roblox Studio at exact scale with
-no gaps or overlaps.
+**2048 × 2048 × 2048 studs** and mesh imports are rejected above
+**~20,000 triangles** — this add-on measures your world, slices it into an
+**even grid** of tiles (equal-size tiles, never leftover slivers),
+auto-splits over-dense pieces, and exports everything so the map reassembles
+in Roblox Studio at exact scale with no gaps or overlaps.
 
 **File:** `roblox_world_exporter.py` · **Blender:** 3.6+ (incl. 4.x) · no
 external dependencies.
-
-## What an export produces
-
-```
-<output folder>/
-├── BlenderWorld.rbxmx     placement scaffold: one MeshPart per piece, exact
-│                          CFrame + size in studs, CollisionFidelity set,
-│                          MeshId placeholders, optional SurfaceAppearance
-├── manifest.json          piece → FBX file → grid cell → stud position/size
-├── meshes/*.fbx           one FBX per piece (baked in studs, centered)
-├── textures/*.png         PBR maps (only with Export Textures on)
-└── export_log.txt         only with Debug Logging on
-```
-
-`.rbxmx` files cannot embed mesh geometry — MeshParts reference uploaded
-assets. That's why meshes ship as FBX plus a scaffold that already knows where
-everything goes.
 
 ## Install
 
@@ -32,50 +16,86 @@ everything goes.
 2. Pick `roblox_world_exporter.py`, enable **Roblox World Exporter**.
 3. The panel appears in the 3D Viewport sidebar (**N** key) → **Roblox** tab.
 
-## Usage
+## Quick start (Single FBX mode — recommended)
 
-1. Set **Meters per Stud** (default `0.28`, the Roblox human-scale
-   convention; use `1.0` if you model at 1 unit = 1 stud).
-2. Set the **Output Folder** (save your .blend first if you keep the default
-   relative path).
-3. Click **Preview Grid** to see the slicing overlay in the viewport, and
-   **Dry Run** for a popup with world size, grid, tile size, and piece count —
-   nothing is written.
-4. Click **Export for Roblox**.
+1. Leave **Mode** on *Single FBX (3D Importer)*.
+2. Check the **Live Stats** box: world size in studs, segment counts, tile
+   size, piece estimate — it updates as you edit the scene.
+3. Optional: click **Preview Grid** — a live overlay that follows your edits
+   and setting changes automatically (no re-toggling needed).
+4. Set the **Output Folder** (save your .blend first if you keep the default
+   relative path) and click **Export for Roblox**.
+5. In Roblox Studio open the **3D Importer**, import the single
+   `<ModelName>.fbx`, and keep the importer's defaults (*Import as Single
+   Asset*, scene position/origin, *Studs* scale unit).
+
+**The whole map appears in Roblox immediately, fully assembled** — every
+piece keeps its world position inside the FBX, so there are no asset ids to
+paste. With *Export Textures* on, textures are embedded and upload
+automatically too.
 
 Your scene is never modified — all slicing happens on evaluated copies
 (modifiers applied), which are deleted afterwards.
 
-### Getting it into Roblox Studio
+## What an export produces
 
-1. Open the **3D Importer** in Studio and import every FBX under `meshes/`
-   (keep the importer's default **Studs** scale unit). With *Export Textures*
-   on, textures are embedded in each FBX and upload automatically.
-2. Right-click **Workspace → Insert From File…** and insert the `.rbxmx`.
-3. For each MeshPart, paste the uploaded mesh's asset id into its **MeshId**
-   property — names match the FBX filenames (see `manifest.json`). The part
-   snaps to the correct position and size automatically, because each mesh is
-   exported centered and pre-scaled in studs.
-4. (Textures) Upload the files under `textures/` and paste their asset ids
-   into each **SurfaceAppearance** map (placeholders are pre-created).
+```
+<output folder>/
+├── BlenderWorld.fbx       Single FBX mode: the whole sliced map, assembled
+├── manifest.json          piece → grid cell → stud position/size/triangles
+├── textures/*.png         PBR maps (only with Export Textures on)
+└── export_log.txt         only with Debug Logging on
 
-## Panel options
+# Per-Piece FBX + .rbxmx mode (advanced) adds:
+├── meshes/*.fbx           one FBX per piece (centered, baked in studs)
+├── BlenderWorld.rbxmx     MeshPart placeholder scaffold (see warning below)
+└── place_pieces.lua       command-bar script that snaps pieces into place
+```
 
-| Option | Meaning |
-| --- | --- |
-| Meters per Stud | Unit scale; studs = meters ÷ this value |
-| Max Tile Size | Roblox's per-axis limit, default 2048 studs |
-| Safety Margin | Subtracted before gridding (2048 − 48 = 2000 effective) so pieces never brush the hard cap |
-| Slice Vertically | Also slice along world height for very tall maps |
-| Grouping | **Merged per Tile** (one MeshPart per tile) or **Per Object** (each object stays its own MeshPart, sliced only where it straddles a grid line) |
-| Collision | CollisionFidelity for every MeshPart: Default / Hull / Box / Precise |
-| Anchored | Export parts anchored (recommended for maps) |
-| Export Textures | Embed textures in FBX + copy PBR maps + SurfaceAppearance placeholders |
-| Selected Only | Export only selected mesh objects |
-| Debug Logging | Verbose console output + `export_log.txt` |
+### ⚠️ About the `.rbxmx` scaffold (advanced mode)
 
-Per-object controls (active object box at the bottom of the panel):
-**Exclude from Export** and a **Collision Override** (Per Object mode).
+`.rbxmx` files **cannot embed mesh geometry** — a MeshPart's `MeshId` must
+point at an uploaded asset, so the scaffold ships with `rbxassetid://0`
+placeholders and its parts are **invisible** until real ids are pasted.
+That's a Roblox format limitation, not a bug. Two ways to use the mode:
+
+- **Easy:** import the FBX pieces with the 3D Importer, then paste and run
+  `place_pieces.lua` in Studio's command bar — it finds every imported
+  MeshPart by name, snaps it to its exact CFrame, anchors it, and applies
+  the intended CollisionFidelity. No id pasting.
+- **Manual:** insert the `.rbxmx`, upload each FBX, and paste each MeshId
+  (names match; `manifest.json` maps everything).
+
+If you just want the map in Roblox, use **Single FBX mode**.
+
+## Panel reference
+
+The panel is organized into collapsible tabs:
+
+**Live Stats (always visible)** — object count, world size in studs, segment
+grid (`3 × 1 × 1 = 3 tiles`), tile size in studs, estimated piece count, and
+inline warnings. Updates live as you move/resize/delete objects.
+
+**Scale & Grid** — *Meters per Stud* (default `0.28`; use `1.0` if you model
+at 1 unit = 1 stud), *Max Tile Size* (2048), *Safety Margin* (48 → effective
+2000), and **Slice Axes X/Y/Z** toggles so you can choose which directions
+(sideways and/or vertically) get gridded.
+
+**Pieces & Density** — *Grouping* (**Merged per Tile** = one MeshPart per
+tile, or **Per Object** = each object stays its own MeshPart, sliced only
+where it straddles a grid line), *Auto-Split Dense Pieces* + *Triangle
+Limit* (default 20,000 — pieces over the limit are recursively halved so
+Roblox accepts them).
+
+**Roblox Settings** — *Map Origin* (**Keep Blender Origin** or **Center at
+Origin**, which centers the footprint at Roblox `(0, y, 0)` with the lowest
+point at ground level Y=0), *Collision*, *Anchored*, *Export Textures*.
+
+**Output** — model name, output folder, *Selected Only*, *Debug Logging*,
+and an **Open Output Folder** button.
+
+**Active Object** — per-object *Exclude from Export* and *Collision
+Override* (Per Object grouping mode).
 
 ## Coordinates & math (for the curious)
 
@@ -83,25 +103,33 @@ Per-object controls (active object box at the bottom of the panel):
 - Grid: per axis, divisions = ⌈extent ÷ effective tile size⌉, tile size =
   extent ÷ divisions — even by construction. A 5000-stud map becomes 3 tiles
   of ~1666.7 studs.
-- Meshes are exported centered at their bounds center with vertices pre-scaled
-  to studs, so when Roblox recenters an imported mesh its size and pivot match
-  the scaffold's CFrame/size exactly.
+- Slicing uses recursive bisection (each cut halves the remaining tile
+  range), so big maps slice in roughly O(mesh × log tiles) instead of
+  O(mesh × tiles).
+- Meshes are exported with vertices pre-scaled to studs, so sizes match
+  exactly after import regardless of importer unit settings.
 
 ## Limitations / notes
 
-- Roblox guidance is ~10k triangles per mesh; the exporter warns per piece
-  but does not decimate. Very dense worlds may need a Decimate modifier first.
-- Slice cuts are open (not capped) — invisible from outside for solid worlds,
-  and collision works fine with Default fidelity.
+- Roblox rejects meshes above ~20k triangles — Auto-Split handles this, but
+  a piece that can't be reduced (e.g. a single gigantic dense blob after 8
+  split levels) is flagged in the warnings; add a Decimate modifier.
+- Slice cuts are open (not capped) — invisible from outside for solid
+  worlds; collision works with Default fidelity.
 - Custom split normals are recomputed after slicing (smooth/flat shading is
   preserved).
-- SurfaceAppearance supports one texture set per MeshPart; the first material
-  with usable Principled BSDF maps wins (all are listed in `manifest.json`).
-- Exports with hundreds of tiles work but block the UI while running; watch
-  the progress cursor. A warning appears above 512 tiles, hard stop at 4096.
+- SurfaceAppearance supports one texture set per MeshPart; the first
+  material with usable Principled BSDF maps wins (all listed in
+  `manifest.json`).
+- Collision fidelity and Anchored can't travel inside an FBX — in Single
+  FBX mode set them after import (bulk-select the MeshParts), or use
+  scaffold mode's `place_pieces.lua` which applies both automatically.
+- Exports with hundreds of tiles block the UI while running; watch the
+  progress cursor. A warning appears above 512 tiles, hard stop at 4096.
 
 ## Development
 
-Pure math/XML helpers (grid computation, coordinate conversion, `.rbxmx`
-generation) are importable without Blender and covered by a unittest suite
-that stubs `bpy` — run it with plain `python3`.
+Pure math/XML/Lua helpers (grid computation, coordinate conversion,
+`.rbxmx` and `place_pieces.lua` generation) are importable without Blender
+and covered by a unittest suite that stubs `bpy` — run it with plain
+`python3`.
